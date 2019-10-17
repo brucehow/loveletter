@@ -16,6 +16,7 @@ public class State implements Cloneable{
   private Card[] deck; //the deck of remaining cards
   private int[] top; //the index of the top of the deck
   private boolean[][] known; //whether player knows another players card
+  private boolean[] handmaid;
   private int[] scores; //the current score of each player
   private java.util.Random random;
   private int[] nextPlayer; //the index of the next player to draw a card (using Object reference so value is shared).
@@ -53,6 +54,7 @@ public class State implements Cloneable{
     discards = new Card[num][16];
     discardCount = new int[num];
     hand = new Card[num];
+    handmaid = new boolean[num];
     top = new int[1];
     known = new boolean[num][num];
     for(int i = 0; i<num; i++){
@@ -178,6 +180,7 @@ public class State implements Cloneable{
       for(int p = 0; p<num; p++)
         if(p!=a) known[p][a]=false;//rescind players knowledge if a known card was played
     }
+    handmaid[a]=false;
     String ret = act.toString(name(a), t!=-1?name(t):"");
     switch(c){
       case GUARD://actor plays the guard
@@ -190,7 +193,7 @@ public class State implements Cloneable{
         ret+=baronAction(a,t);
         break;
       case HANDMAID:
-        //no update required
+        handmaid[a]=true;
         break;
       case PRINCE:
         ret+= princeAction(t);  
@@ -262,8 +265,9 @@ public class State implements Cloneable{
   //handmaid action requires no update
 
   private String princeAction(int t){
-    discards[t][discardCount[t]++] = hand[t];
-    if(hand[t]==Card.PRINCESS){
+    Card discard = hand[t];
+    discards[t][discardCount[t]++] = discard;
+    if(discard==Card.PRINCESS){
       hand[t]=null;
       for(int p = 0; p<num; p++) known[p][t]=true;
       return "\nPlayer "+name(t)+" discarded the Princess and is eliminated.";
@@ -271,7 +275,7 @@ public class State implements Cloneable{
     hand[t]=deck[top[0]++];
     for(int p =0; p<num;p++) 
       if(p!=t)known[p][t]=false;
-    return "\nPlayer "+name(t)+" discards the "+discards[t][discardCount[t]-1]+".";
+    return "\nPlayer "+name(t)+" discards the "+discard+".";
   }
 
   private String kingAction(int a, int t){
@@ -279,6 +283,13 @@ public class State implements Cloneable{
       return "\nPlayer "+name(t)+" is protected by the Handmaid.";
     known[a][t]=true;
     known[t][a]=true;
+    for(int p =0; p<num;p++){ 
+      if(p!=t && p!=a){
+        boolean tmp = known[p][t];
+        known[p][t] = known[p][a];
+        known[p][a] = tmp;
+      }
+    }
     Card tmp = hand[a];
     hand[a] = hand[t];
     hand[t] = tmp;
@@ -361,15 +372,15 @@ public class State implements Cloneable{
    * @return true if and only if the index corresponds to a player who is protected by the handmaid
    * **/
   public boolean handmaid(int player){
-    if(player<0 || player >=num || discardCount[player]==0) return false;
-    return discards[player][discardCount[player]-1]==Card.HANDMAID;
+    if(player<0 || player >=num) return false;
+    return handmaid[player];
   }
 
   //helper method to check if every other player is protected by the handmaid
   private boolean allHandmaid(int player){
     boolean noAction = true;
     for(int i = 0; i<num; i++)
-      noAction = noAction && (eliminated(i) || handmaid(i) || i==player); 
+      noAction = noAction && (eliminated(i) || handmaid[i] || i==player); 
     return noAction;
   }
 

@@ -1,6 +1,8 @@
 package loveletter;
 import java.util.Random;
 import java.io.PrintStream;
+
+import agents.Agent22242664;
 import agents.RandomAgent;
 
 /**
@@ -29,8 +31,8 @@ public class LoveLetter{
    * Constructs a LoveLetter game.
    * Defauklt construct with system random seed, and System.out as the PrintStream
    * **/
-  public LoveLetter(){
-    this(0,System.out);
+  public LoveLetter() {
+    this((int) (Math.random() * 1000), System.out);
     this.ps = System.out;
   }
 
@@ -89,7 +91,7 @@ System.out.println("New Round, scores are:\nplayer 0:"+gameState.score(0)+"\npla
    * The agent implementations should be in the default package.
    * */
   public static void main(String[] args){
-    Agent[] agents = {new agents.RandomAgent(),new agents.RandomAgent(), new agents.BorkedAgent(), new agents.BorkedAgent()};
+    Agent[] agents = {new agents.BruceAgent(), new agents.RandomAgent(), new agents.BorkedAgent(), new agents.BorkedAgent()};
     LoveLetter env = new LoveLetter();
     StringBuffer log = new StringBuffer("A simple game for four random agents:\n");
     int[] results = env.playGame(agents);
