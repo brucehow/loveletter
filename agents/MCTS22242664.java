@@ -55,6 +55,19 @@ public class MCTS22242664 {
         }
         
         for (Card cardPlayed : playable) {
+            other = (drawn == cardPlayed) ? state.hand : drawn;
+            if (cardPlayed.value() > 4 && other == Card.COUNTESS) { // Countess restriction
+                continue;
+            }
+
+            // Adjust the new unseenCount for next player
+            newUnseenCount = new HashMap<Card, Integer>(state.unseenCount);
+            if (newUnseenCount.containsKey(other)) {
+                newUnseenCount.put(other, newUnseenCount.get(other) + 1);
+            } else {
+                newUnseenCount.put(other, 1);
+            }
+
             switch (cardPlayed) {
                 case GUARD:
                     for (Card card : state.unseenCount.keySet()) {
@@ -69,7 +82,6 @@ public class MCTS22242664 {
                                 if (state.handmaid[i] || i == state.playerIndex || state.eliminated[i]) continue;
                                 // need to do Edge case where all players are hand maidened
                                 
-                                newUnseenCount = new HashMap<Card, Integer>(state.unseenCount);
                                 newUnseenCount.put(card, newUnseenCount.get(card) - (correctGuess ? 1 : 0));
 
                                 newElim = new boolean[state.num];
@@ -105,10 +117,6 @@ public class MCTS22242664 {
                     break;
                 case PRIEST:
                     // Temp null card pretty mcuh plays it randomly, need logic using knonw[] array
-                    newUnseenCount = new HashMap<Card, Integer>(state.unseenCount);
-                    other = drawn == Card.PRIEST ? state.hand : drawn;
-                    newUnseenCount.put(other, newUnseenCount.get(other) - 1);
-
                     for (int i = 0; i < state.num; i++) {
                         if (state.handmaid[i] || i == state.playerIndex || state.eliminated[i]) continue;
                         for (Card newCard1 : newUnseenCount.keySet()) {
@@ -136,48 +144,119 @@ public class MCTS22242664 {
                     break;
                 case BARON:
                     // need to implement with known[]
-                    newUnseenCount = new HashMap<Card, Integer>(state.unseenCount);
-                    other = drawn == Card.BARON ? state.hand : drawn;
-                    newUnseenCount.put(other, newUnseenCount.get(other) - 1);
 
-                    newHandmaid = new boolean[state.num];
-                    for (int j = 0; j < state.num; j++) {
-                        newHandmaid[j] = j == state.playerIndex ? false : state.handmaid[j];
+                    // Probabily calculation
+                    int winCount = 0;
+                    int loseCount = 0;
+                    int drawCount= 0;
+                    for (Card card : state.unseenCount.keySet()) {
+                        if (card.value() < 3) winCount++;
+                        else if (card.value() > 3) loseCount++;
+                        else drawCount++;
                     }
 
-                    for (int i = 0; i < state.num; i++) {
-                        if (state.handmaid[i] || i == state.playerIndex || state.eliminated[i]) continue;
-                        for (Card newCard1 : newUnseenCount.keySet()) {
-                            for (Card newCard2 : newUnseenCount.keySet()) {
-                                if (newCard2 == newCard1 && newUnseenCount.get(newCard1) <= 1) {
-                                    continue;
-                                }
-                                HashMap<Card, Integer> tempUnseenCount = new HashMap<Card, Integer>(newUnseenCount);
-                                tempUnseenCount.put(newCard1, tempUnseenCount.get(newCard1) - 1);
-                                tempUnseenCount.put(newCard2, tempUnseenCount.get(newCard2) - 1);
-                                removeUnseenCards(tempUnseenCount);
-                                State22242664 newState = new State22242664(state.num, getNextPlayer(state.playerIndex, state.eliminated), newCard1, newCard2, 
-                                    state.numUnseen - 1, tempUnseenCount, newHandmaid, state.eliminated, state.deckSize - 1);
-                                try {
-                                    Action newAction = Action.playBaron(state.playerIndex, i);
-                                    Node newNode = new Node(parent, newState, newAction, 1);
-                                    children.add(newNode);
-                                } catch (IllegalActionException e) {
-                                    e.printStackTrace();
-                                    System.exit(1);
+                    for (Card card : state.unseenCount.keySet()) {
+                        for (int i = 0; i < state.num; i++) {
+                            if (state.handmaid[i] || i == state.playerIndex || state.eliminated[i]) continue;
+                            // need to do Edge case where all players are hand maidened
+                            
+                            newElim = new boolean[state.num];
+                            for (int j = 0; j < state.num; j++) {
+                                newElim[j] = state.eliminated[j];
+                            }
+                            int newNumUnseen = state.numUnseen;
+
+                            if (card.value() < 3) {
+                                prob = winCount / state.numUnseen;
+                                newUnseenCount.put(card, newUnseenCount.get(card) - 1);
+                                newNumUnseen -= 2;
+                                newElim[i] = true;
+                            } else if (card.value() > 3) {
+                                prob = loseCount / state.numUnseen;
+                                newElim[state.playerIndex] = true;
+                                // Discard other card
+                                newUnseenCount.put(other, newUnseenCount.get(other) - 1);
+                                newNumUnseen -= 2;
+                            } else {
+                                prob = drawCount / state.numUnseen;
+                            }
+                            // maybe account when all other players elimi
+
+                            for (Card newCard1 : newUnseenCount.keySet()) {
+                                for (Card newCard2 : newUnseenCount.keySet()) {
+                                    if (newCard2 == newCard1 && newUnseenCount.get(newCard1) <= 1) {
+                                        continue;
+                                    }
+                                    HashMap<Card, Integer> tempUnseenCount = new HashMap<Card, Integer>(newUnseenCount);
+                                    tempUnseenCount.put(newCard1, tempUnseenCount.get(newCard1) - 1);
+                                    tempUnseenCount.put(newCard2, tempUnseenCount.get(newCard2) - 1);
+                                    removeUnseenCards(tempUnseenCount);
+
+                                    State22242664 newState = new State22242664(state.num, getNextPlayer(state.playerIndex, newElim), newCard1, newCard2, 
+                                        newNumUnseen, tempUnseenCount, newHandmaid, newElim, state.deckSize - 1);
+                                    try {
+                                        Action newAction = Action.playBaron(state.playerIndex, i);
+                                        Node newNode = new Node(parent, newState, newAction, prob);
+                                        children.add(newNode);
+                                    } catch (IllegalActionException e) {
+                                        e.printStackTrace();
+                                        System.exit(1);
+                                    }
                                 }
                             }
                         }
                     }
                     break;
                 case HANDMAID:
-                    
+                    newHandmaid[state.playerIndex] = true;
+                    for (Card newCard1 : newUnseenCount.keySet()) {
+                        for (Card newCard2 : newUnseenCount.keySet()) {
+                            if (newCard2 == newCard1 && newUnseenCount.get(newCard1) <= 1) {
+                                continue;
+                            }
+                            HashMap<Card, Integer> tempUnseenCount = new HashMap<Card, Integer>(newUnseenCount);
+                            tempUnseenCount.put(newCard1, tempUnseenCount.get(newCard1) - 1);
+                            tempUnseenCount.put(newCard2, tempUnseenCount.get(newCard2) - 1);
+                            removeUnseenCards(tempUnseenCount);
+                            State22242664 newState = new State22242664(state.num, getNextPlayer(state.playerIndex, state.eliminated), newCard1, newCard2, 
+                                state.numUnseen - 1, tempUnseenCount, newHandmaid, state.eliminated, state.deckSize - 1);
+                            try {
+                                Action newAction = Action.playHandmaid(state.playerIndex);
+                                Node newNode = new Node(parent, newState, newAction, 1);
+                                children.add(newNode);
+                            } catch (IllegalActionException e) {
+                                e.printStackTrace();
+                                System.exit(1);
+                            }
+                        }
+                    }
                     break;
                 case PRINCE:  
                     break;
                 case KING:
                     break;
                 case COUNTESS:
+                    for (Card newCard1 : newUnseenCount.keySet()) {
+                        for (Card newCard2 : newUnseenCount.keySet()) {
+                            if (newCard2 == newCard1 && newUnseenCount.get(newCard1) <= 1) {
+                                continue;
+                            }
+                            HashMap<Card, Integer> tempUnseenCount = new HashMap<Card, Integer>(newUnseenCount);
+                            tempUnseenCount.put(newCard1, tempUnseenCount.get(newCard1) - 1);
+                            tempUnseenCount.put(newCard2, tempUnseenCount.get(newCard2) - 1);
+                            removeUnseenCards(tempUnseenCount);
+                            State22242664 newState = new State22242664(state.num, getNextPlayer(state.playerIndex, state.eliminated), newCard1, newCard2, 
+                                state.numUnseen - 1, tempUnseenCount, newHandmaid, state.eliminated, state.deckSize - 1);
+                            try {
+                                Action newAction = Action.playCountess(state.playerIndex);
+                                Node newNode = new Node(parent, newState, newAction, 1);
+                                children.add(newNode);
+                            } catch (IllegalActionException e) {
+                                e.printStackTrace();
+                                System.exit(1);
+                            }
+                        }
+                    }
                     break;
                 default: // Princess Card
                     break;
