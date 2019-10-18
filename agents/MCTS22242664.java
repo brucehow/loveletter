@@ -62,11 +62,6 @@ public class MCTS22242664 {
 
             // Adjust the new unseenCount for next player
             newUnseenCount = new HashMap<Card, Integer>(state.unseenCount);
-            if (newUnseenCount.containsKey(other)) {
-                newUnseenCount.put(other, newUnseenCount.get(other) + 1);
-            } else {
-                newUnseenCount.put(other, 1);
-            }
 
             switch (cardPlayed) {
                 case GUARD:
@@ -95,6 +90,13 @@ public class MCTS22242664 {
                                             continue;
                                         }
                                         HashMap<Card, Integer> tempUnseenCount = new HashMap<Card, Integer>(newUnseenCount);
+                                
+                                        // Add the other card in hand to unseen for next player
+                                        if (tempUnseenCount.containsKey(other)) {
+                                            tempUnseenCount.put(other, tempUnseenCount.get(other) + 1);
+                                        } else {
+                                            tempUnseenCount.put(other, 1);
+                                        }
                                         tempUnseenCount.put(newCard1, tempUnseenCount.get(newCard1) - 1);
                                         tempUnseenCount.put(newCard2, tempUnseenCount.get(newCard2) - 1);
                                         removeUnseenCards(tempUnseenCount);
@@ -125,6 +127,11 @@ public class MCTS22242664 {
                                     continue;
                                 }
                                 HashMap<Card, Integer> tempUnseenCount = new HashMap<Card, Integer>(newUnseenCount);
+                                if (tempUnseenCount.containsKey(other)) {
+                                    tempUnseenCount.put(other, tempUnseenCount.get(other) + 1);
+                                } else {
+                                    tempUnseenCount.put(other, 1);
+                                }
                                 tempUnseenCount.put(newCard1, tempUnseenCount.get(newCard1) - 1);
                                 tempUnseenCount.put(newCard2, tempUnseenCount.get(newCard2) - 1);
                                 removeUnseenCards(tempUnseenCount);
@@ -188,6 +195,11 @@ public class MCTS22242664 {
                                         continue;
                                     }
                                     HashMap<Card, Integer> tempUnseenCount = new HashMap<Card, Integer>(newUnseenCount);
+                                    if (tempUnseenCount.containsKey(other)) {
+                                        tempUnseenCount.put(other, tempUnseenCount.get(other) + 1);
+                                    } else {
+                                        tempUnseenCount.put(other, 1);
+                                    }
                                     tempUnseenCount.put(newCard1, tempUnseenCount.get(newCard1) - 1);
                                     tempUnseenCount.put(newCard2, tempUnseenCount.get(newCard2) - 1);
                                     removeUnseenCards(tempUnseenCount);
@@ -215,6 +227,11 @@ public class MCTS22242664 {
                                 continue;
                             }
                             HashMap<Card, Integer> tempUnseenCount = new HashMap<Card, Integer>(newUnseenCount);
+                            if (tempUnseenCount.containsKey(other)) {
+                                tempUnseenCount.put(other, tempUnseenCount.get(other) + 1);
+                            } else {
+                                tempUnseenCount.put(other, 1);
+                            }
                             tempUnseenCount.put(newCard1, tempUnseenCount.get(newCard1) - 1);
                             tempUnseenCount.put(newCard2, tempUnseenCount.get(newCard2) - 1);
                             removeUnseenCards(tempUnseenCount);
@@ -232,8 +249,69 @@ public class MCTS22242664 {
                     }
                     break;
                 case PRINCE:  
+                    for (Card card : state.unseenCount.keySet()) {
+                        prob = state.unseenCount.get(card) / state.numUnseen; // todo
+
+                        for (int i = 0; i < state.num; i++) {
+                            if (state.handmaid[i] || state.eliminated[i]) continue;
+                            // need to do Edge case where all players are hand maidened
+
+                            // Prince can be played on self, but only consider other card in hand to discard
+                            if (i == state.playerIndex && card != other) continue;
+                            
+                            newUnseenCount.put(card, newUnseenCount.get(card) - 1);
+
+                            for (Card newCard1 : newUnseenCount.keySet()) {
+                                for (Card newCard2 : newUnseenCount.keySet()) {
+                                    if (newCard2 == newCard1 && newUnseenCount.get(newCard1) <= 1) {
+                                        continue;
+                                    }
+                                    HashMap<Card, Integer> tempUnseenCount = new HashMap<Card, Integer>(newUnseenCount);
+                                    if (tempUnseenCount.containsKey(other)) {
+                                        tempUnseenCount.put(other, tempUnseenCount.get(other) + 1);
+                                    } else {
+                                        tempUnseenCount.put(other, 1);
+                                    }
+                                    tempUnseenCount.put(newCard1, tempUnseenCount.get(newCard1) - 1);
+                                    tempUnseenCount.put(newCard2, tempUnseenCount.get(newCard2) - 1);
+                                    removeUnseenCards(tempUnseenCount);
+                                    State22242664 newState = new State22242664(state.num, getNextPlayer(state.playerIndex, state.eliminated), newCard1, newCard2, 
+                                        state.numUnseen - 2, tempUnseenCount, newHandmaid, state.eliminated, state.deckSize - 1);
+                                    try {
+                                        Action newAction = Action.playKing(state.playerIndex, i);
+                                        Node newNode = new Node(parent, newState, newAction, 1); // 1 prob?
+                                        children.add(newNode);
+                                    } catch (IllegalActionException e) {
+                                        e.printStackTrace();
+                                        System.exit(1);
+                                    }
+                                }
+                            }
+                        }
+                    }
                     break;
                 case KING:
+                    // Need known[] implementation!!
+                    for (Card newCard : newUnseenCount.keySet()) {
+                        HashMap<Card, Integer> tempUnseenCount = new HashMap<Card, Integer>(newUnseenCount);
+
+                        // Old card becomes unseen
+                        if (tempUnseenCount.containsKey(newCard)) {
+                            tempUnseenCount.put(newCard, tempUnseenCount.get(newCard) + 1);
+                        } else {
+                            tempUnseenCount.put(newCard, 1);
+                        }
+                        State22242664 newState = new State22242664(state.num, getNextPlayer(state.playerIndex, state.eliminated), other, newCard, 
+                            state.numUnseen - 1, tempUnseenCount, newHandmaid, state.eliminated, state.deckSize - 1);
+                        try {
+                            Action newAction = Action.playKing(state.playerIndex, getNextPlayer(state.playerIndex, state.eliminated));
+                            Node newNode = new Node(parent, newState, newAction, 1);
+                            children.add(newNode);
+                        } catch (IllegalActionException e) {
+                            e.printStackTrace();
+                            System.exit(1);
+                        }
+                    }
                     break;
                 case COUNTESS:
                     for (Card newCard1 : newUnseenCount.keySet()) {
@@ -258,7 +336,7 @@ public class MCTS22242664 {
                         }
                     }
                     break;
-                default: // Princess Card
+                default: // Never play princess Card
                     break;
             }
         }        
