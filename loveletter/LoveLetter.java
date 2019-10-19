@@ -2,8 +2,7 @@ package loveletter;
 import java.util.Random;
 import java.io.PrintStream;
 
-import agents.Agent22242664;
-import agents.RandomAgent;
+import agents.*;
 
 /**
  * A class for running a single game of LoveLetter.
