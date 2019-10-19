@@ -1,5 +1,6 @@
 package agents;
 import java.util.HashMap;
+import java.util.Iterator;
 
 import loveletter.*;
 
@@ -16,6 +17,8 @@ public class State22242664 {
     public HashMap<Card, Integer> unseenCount;
     public int playerIndex;
     public int deckSize;
+    public Card[][] discards; //the discarded cards or each player
+    public int[] discardCount; //how many cards each player has discarded
 
     /**
      * Constructor for known actual state
@@ -38,9 +41,20 @@ public class State22242664 {
         }
         playerIndex = current.getPlayerIndex();
         deckSize = current.deckSize();
+
+        discards = new Card[num][12]; // 12 max discards pp
+        for (int i = 0; i < num; i++) {
+            discardCount[i] = 0;
+            Iterator<Card> it = current.getDiscards(i);
+            while (it.hasNext()) {
+                discards[i][discardCount[i]++] = it.next();
+            }
+        }
+
     }
 
-    public State22242664(int num, int playerIndex, Card hand, Card drawn, int numUnseen, HashMap<Card, Integer> unseenCount, boolean[] handmaid, boolean[] eliminated, int deckSize) {
+    public State22242664(int num, int playerIndex, Card hand, Card drawn, int numUnseen, HashMap<Card, Integer> unseenCount,
+        boolean[] handmaid, boolean[] eliminated, int deckSize, Card[][] discards, int[] discardCount) {
         this.num = num;
         this.playerIndex = playerIndex;
         this.hand = hand;
@@ -50,5 +64,7 @@ public class State22242664 {
         this.numUnseen = numUnseen;
         this.unseenCount = unseenCount;
         this.deckSize = deckSize;
+        this.discards = discards;
+        this.discardCount = discardCount;
     }
 }
