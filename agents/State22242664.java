@@ -43,6 +43,7 @@ public class State22242664 {
         deckSize = current.deckSize();
 
         discards = new Card[num][12]; // 12 max discards pp
+        discardCount = new int[num];
         for (int i = 0; i < num; i++) {
             discardCount[i] = 0;
             Iterator<Card> it = current.getDiscards(i);
