@@ -54,27 +54,27 @@ public class LoveLetter{
           agents[i].newRound(playerStates[i]);
         }
         while(!gameState.roundOver()){
-System.out.println("Cards are:\nplayer 0:"+gameState.getCard(0)+"\nplayer 1:"+gameState.getCard(1)+"\nplayer 2:"+gameState.getCard(2)+"\nplayer 3:"+gameState.getCard(3));        
+//System.out.println("Cards are:\nplayer 0:"+gameState.getCard(0)+"\nplayer 1:"+gameState.getCard(1)+"\nplayer 2:"+gameState.getCard(2)+"\nplayer 3:"+gameState.getCard(3));        
           Card topCard = gameState.drawCard(); 
-System.out.println("Player "+gameState.nextPlayer()+" draws the "+topCard);
+//System.out.println("Player "+gameState.nextPlayer()+" draws the "+topCard);
           Action act = agents[gameState.nextPlayer()].playCard(topCard);
           try{
-            ps.println(gameState.update(act,topCard));
+            gameState.update(act,topCard);
           }
           catch(IllegalActionException e){
-            ps.println("ILLEGAL ACTION PERFORMED BY PLAYER "+agents[gameState.nextPlayer()]+
-              "("+gameState.nextPlayer()+")\nRandom Move Substituted");
+            //ps.println("ILLEGAL ACTION PERFORMED BY PLAYER "+agents[gameState.nextPlayer()]+
+             // "("+gameState.nextPlayer()+")\nRandom Move Substituted");
             rando.newRound(gameState.playerState(gameState.nextPlayer()));
             act = rando.playCard(topCard);
-            ps.println(gameState.update(act,topCard));
+            gameState.update(act,topCard);
           }
           for(int p = 0; p<numPlayers; p++)
             agents[p].see(act,playerStates[p]);
         }
-System.out.println("New Round, scores are:\nplayer 0:"+gameState.score(0)+"\nplayer 1:"+gameState.score(1)+"\nplayer 2:"+gameState.score(2)+"\nplayer 3:"+gameState.score(3));        
+//System.out.println("New Round, scores are:\nplayer 0:"+gameState.score(0)+"\nplayer 1:"+gameState.score(1)+"\nplayer 2:"+gameState.score(2)+"\nplayer 3:"+gameState.score(3));        
         gameState.newRound();
       }
-      ps.println("Player "+gameState.gameWinner()+" wins the Princess's heart!");
+      //ps.println("Player "+gameState.gameWinner()+" wins the Princess's heart!");
       int[] scoreboard = new int[numPlayers];
       for(int p = 0; p<numPlayers; p++)scoreboard[p] = gameState.score(p);
       return scoreboard;
@@ -90,14 +90,24 @@ System.out.println("New Round, scores are:\nplayer 0:"+gameState.score(0)+"\npla
    * The agent implementations should be in the default package.
    * */
   public static void main(String[] args){
-    Agent[] agents = {new agents.Agent22242664(), new agents.RandomAgent(), new agents.BorkedAgent(), new agents.BorkedAgent()};
-    LoveLetter env = new LoveLetter();
-    StringBuffer log = new StringBuffer("A simple game for four random agents:\n");
-    int[] results = env.playGame(agents);
-    env.ps.print("The final scores are:\n");
-    for(int i= 0; i<agents.length; i++)
-      env.ps.print("\t Agent "+i+", \""+agents[i]+"\":\t "+results[i]+"\n");
-  }
+        int games = 50000;
+        Agent[] agents = {new agents.RandomAgent(), new agents.RandomAgent(), new agents.RandomAgent(), new agents.Agent22242664()};
+        double[] wr = {0.0, 0.0, 0.0, 0.0};
+        for (int g = 0; g < games; g++) {
+            LoveLetter env = new LoveLetter();
+            StringBuffer log = new StringBuffer("A simple game for four random agents:\n");
+            int[] results = env.playGame(agents);
+            //env.ps.print("The final scores are:\n");
+            for(int i = 0; i < agents.length; i++) {
+                //env.ps.print("\t Agent "+i+", \""+agents[i]+"\":\t "+results[i]+"\n");
+                if (results[i] == 4) wr[i]++;
+            }
+        }
+        for(int i = 0; i < agents.length; i++) {
+            System.out.println("\t Agent " + agents[i] + " W:" + wr[i] + " WR:" + (wr[i]/games*100) + "%");
+        }
+    }
 }
+
 
 

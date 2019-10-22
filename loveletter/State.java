@@ -377,7 +377,7 @@ public class State implements Cloneable{
   }
 
   //helper method to check if every other player is protected by the handmaid
-  private boolean allHandmaid(int player){
+  public boolean allHandmaid(int player){
     boolean noAction = true;
     for(int i = 0; i<num; i++)
       noAction = noAction && (eliminated(i) || handmaid[i] || i==player); 
